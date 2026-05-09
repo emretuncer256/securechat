@@ -13,10 +13,11 @@
 
 - **Hybrid E2EE Encryption** — RSA-2048 for key exchange, AES-256-CBC for message encryption, all using the browser's native [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) (no external crypto libraries)
 - **Blind Relay Architecture** — The server routes encrypted payloads without ever accessing plaintext content
+- **Ephemeral Media (Voice & Photo)** — Send end-to-end encrypted photos and voice recordings with real-time animated audio waveforms
 - **Real-time WebSocket Communication** — Instant message delivery with automatic reconnection and exponential backoff
 - **Private & Group Messaging** — 1-to-1 direct messages and multi-user chat rooms with per-room encryption keys
 - **Zero Persistent Message Storage** — Messages are strictly ephemeral; only user credentials are stored in SQLite
-- **Modern Dark UI** — Glassmorphism-inspired design with Tailwind CSS, smooth animations (AOS.js), and Lucide icons
+- **Premium Modern UI** — A stunning landing page, glassmorphism-inspired design, dynamic CSS animations (AOS.js), and interactive UI elements
 - **User Presence Tracking** — Real-time online/offline status indicators
 
 ## 🏗️ Architecture
