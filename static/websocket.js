@@ -198,6 +198,21 @@ async function handleWSMessage(data) {
         case 'room_message_sent':
             break;
 
+        // ── Media Messages ──────────────────────────────────────
+        case 'media_message':
+            await handleIncomingMediaMessage(data);
+            break;
+
+        case 'media_message_sent':
+            break;
+
+        case 'room_media_message':
+            await handleIncomingRoomMediaMessage(data);
+            break;
+
+        case 'room_media_message_sent':
+            break;
+
         case 'room_members':
             // Could update UI
             break;
@@ -428,3 +443,122 @@ function autoResizeTextarea(el) {
     el.style.height = Math.min(el.scrollHeight, 128) + 'px';
     document.getElementById('send-btn').disabled = !el.value.trim();
 }
+
+// ── Media Messaging ─────────────────────────────────────────────
+
+async function sendMediaMessage(blob, mediaType, metadata = {}) {
+    if (!AppState.activeChat) return;
+    const chat = AppState.activeChat;
+
+    try {
+        const arrayBuffer = await blobToArrayBuffer(blob);
+
+        if (chat.type === 'user') {
+            const aesKey = await ensureSessionKey(chat.name);
+            if (!aesKey) { showToast('Encryption not ready. Please wait...', 'error'); return; }
+            const encrypted = await CryptoManager.encryptBinary(arrayBuffer, aesKey);
+            wsSend({
+                type: 'media_message',
+                to: chat.name,
+                data: encrypted,
+                mediaType,
+                metadata,
+            });
+            // Optimistic display
+            const blobUrl = URL.createObjectURL(blob);
+            addMessage(`user:${chat.name}`, {
+                from: AppState.username,
+                mediaType,
+                blobUrl,
+                metadata,
+                time: new Date().toISOString(),
+                sent: true,
+            });
+        } else if (chat.type === 'room') {
+            let aesKey = await ensureRoomSessionKey(chat.name);
+            if (!aesKey) {
+                await distributeRoomKey(chat.name);
+                aesKey = AppState.sessionKeys[`room:${chat.name}`];
+            }
+            if (!aesKey) { showToast('Room encryption not ready', 'error'); return; }
+            const encrypted = await CryptoManager.encryptBinary(arrayBuffer, aesKey);
+            wsSend({
+                type: 'room_media_message',
+                room: chat.name,
+                data: encrypted,
+                mediaType,
+                metadata,
+            });
+            // Optimistic display
+            const blobUrl = URL.createObjectURL(blob);
+            addMessage(`room:${chat.name}`, {
+                from: AppState.username,
+                mediaType,
+                blobUrl,
+                metadata,
+                time: new Date().toISOString(),
+                sent: true,
+            });
+        }
+    } catch (err) {
+        console.error('Media send error:', err);
+        showToast('Failed to send media', 'error');
+    }
+}
+
+async function handleIncomingMediaMessage(data) {
+    const chatId = `user:${data.from}`;
+    try {
+        const aesKey = AppState.sessionKeys[data.from];
+        if (!aesKey) { console.warn('No AES key for', data.from); return; }
+        const decrypted = await CryptoManager.decryptBinary(data.data, aesKey);
+        const mimeType = data.metadata?.mimeType || (data.mediaType === 'image' ? 'image/jpeg' : 'audio/webm');
+        const blob = arrayBufferToBlob(decrypted, mimeType);
+        const blobUrl = URL.createObjectURL(blob);
+
+        addMessage(chatId, {
+            from: data.from,
+            mediaType: data.mediaType,
+            blobUrl,
+            metadata: data.metadata || {},
+            time: data.timestamp,
+            sent: false,
+        });
+
+        if (!AppState.activeChat || AppState.activeChat.type !== 'user' || AppState.activeChat.name !== data.from) {
+            AppState.unread[chatId] = (AppState.unread[chatId] || 0) + 1;
+            renderUsersList();
+            const label = data.mediaType === 'image' ? '📷 Photo' : '🎤 Voice message';
+            showToast(`${data.from}: ${label}`, 'info');
+        }
+    } catch (err) { console.error('Media decrypt error:', err); }
+}
+
+async function handleIncomingRoomMediaMessage(data) {
+    const chatId = `room:${data.room}`;
+    try {
+        const aesKey = AppState.sessionKeys[chatId];
+        if (!aesKey) { console.warn('No AES key for room', data.room); return; }
+        const decrypted = await CryptoManager.decryptBinary(data.data, aesKey);
+        const mimeType = data.metadata?.mimeType || (data.mediaType === 'image' ? 'image/jpeg' : 'audio/webm');
+        const blob = arrayBufferToBlob(decrypted, mimeType);
+        const blobUrl = URL.createObjectURL(blob);
+
+        addMessage(chatId, {
+            from: data.from,
+            mediaType: data.mediaType,
+            blobUrl,
+            metadata: data.metadata || {},
+            time: data.timestamp,
+            sent: false,
+        });
+
+        if (!AppState.activeChat || AppState.activeChat.type !== 'room' || AppState.activeChat.name !== data.room) {
+            AppState.unread[chatId] = (AppState.unread[chatId] || 0) + 1;
+            renderRoomsList();
+            const label = data.mediaType === 'image' ? '📷 Photo' : '🎤 Voice message';
+            showToast(`#${data.room} — ${data.from}: ${label}`, 'info');
+        }
+    } catch (err) { console.error('Room media decrypt error:', err); }
+}
+

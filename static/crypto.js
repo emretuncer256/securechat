@@ -64,5 +64,31 @@ const CryptoManager = {
         const ciphertext = data.slice(16);
         const decrypted = await crypto.subtle.decrypt({ name: "AES-CBC", iv }, aesKey, ciphertext);
         return new TextDecoder().decode(decrypted);
+    },
+
+    // ── Binary Data Encryption (Images, Audio) ─────────────────
+
+    async encryptBinary(arrayBuffer, aesKey) {
+        const iv = crypto.getRandomValues(new Uint8Array(16));
+        const ciphertext = await crypto.subtle.encrypt({ name: "AES-CBC", iv }, aesKey, arrayBuffer);
+        const combined = new Uint8Array(16 + ciphertext.byteLength);
+        combined.set(iv, 0);
+        combined.set(new Uint8Array(ciphertext), 16);
+        // Encode in chunks to avoid call-stack overflow on large files
+        let binary = '';
+        const CHUNK = 8192;
+        for (let i = 0; i < combined.length; i += CHUNK) {
+            binary += String.fromCharCode(...combined.subarray(i, i + CHUNK));
+        }
+        return btoa(binary);
+    },
+
+    async decryptBinary(payload, aesKey) {
+        const raw = atob(payload);
+        const data = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; i++) data[i] = raw.charCodeAt(i);
+        const iv = data.slice(0, 16);
+        const ciphertext = data.slice(16);
+        return await crypto.subtle.decrypt({ name: "AES-CBC", iv }, aesKey, ciphertext);
     }
 };

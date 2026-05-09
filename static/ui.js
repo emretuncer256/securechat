@@ -32,14 +32,53 @@ function renderMessages() {
         const cls = isSent ? 'sent' : 'received';
         const time = formatTime(msg.time);
         const sender = (!isSent && AppState.activeChat.type === 'room') ? `<div class="text-xs font-medium text-accent mb-1">${escapeHtml(msg.from)}</div>` : '';
+
+        let contentHtml = '';
+        if (msg.mediaType === 'image') {
+            contentHtml = `<div class="image-bubble" onclick="openLightbox('${msg.blobUrl}')">
+                <img src="${msg.blobUrl}" alt="Photo" loading="lazy">
+                <div class="image-overlay"><i data-lucide="maximize-2" class="w-5 h-5"></i></div>
+            </div>`;
+        } else if (msg.mediaType === 'voice') {
+            const durationSec = msg.metadata?.duration || 0;
+            const durText = formatDuration(durationSec);
+            const uid = 'vp-' + Math.random().toString(36).slice(2, 9);
+            
+            // Build waveform bars HTML
+            const waveform = msg.metadata?.waveform || Array(40).fill(0.1);
+            const barsHtml = waveform.map(val => {
+                const height = Math.max(10, Math.min(100, val * 100)); // 10% to 100% height
+                return `<div class="wave-bar" style="height: ${height}%"></div>`;
+            }).join('');
+
+            contentHtml = `<div class="voice-bubble" id="${uid}">
+                <button class="voice-play-btn" onclick="toggleVoicePlay('${uid}','${msg.blobUrl}')">
+                    <i data-lucide="play" class="w-4 h-4"></i>
+                </button>
+                <div class="voice-track" id="${uid}-track" onclick="seekVoice(event, '${uid}')">
+                    ${barsHtml}
+                </div>
+                <span class="voice-duration" id="${uid}-dur">${durText}</span>
+                <audio src="${msg.blobUrl}" preload="metadata" id="${uid}-audio"
+                    data-duration="${durationSec}"
+                    ontimeupdate="updateVoiceProgress('${uid}')"
+                    onended="resetVoicePlayer('${uid}')"></audio>
+            </div>`;
+        } else {
+            contentHtml = `<div class="message-text">${escapeHtml(msg.text)}</div>`;
+        }
+
         return `<div class="flex ${isSent ? 'justify-end' : 'justify-start'}">
             <div class="message-bubble ${cls}">
                 ${sender}
-                <div class="message-text">${escapeHtml(msg.text)}</div>
+                ${contentHtml}
                 <div class="message-meta">${time}</div>
             </div>
         </div>`;
     }).join('');
+
+    // Re-init Lucide icons for dynamic content
+    if (window.lucide) lucide.createIcons({ nodes: [container] });
 
     container.scrollTop = container.scrollHeight;
 }
@@ -440,4 +479,305 @@ function formatTime(iso) {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Media UI Helpers
+// ═══════════════════════════════════════════════════════════════
+
+// ── Image Lightbox ──────────────────────────────────────────────
+
+function openLightbox(src) {
+    const lb = document.getElementById('image-lightbox');
+    document.getElementById('lightbox-img').src = src;
+    lb.classList.remove('hidden');
+}
+
+function closeLightbox() {
+    const lb = document.getElementById('image-lightbox');
+    lb.classList.add('hidden');
+    document.getElementById('lightbox-img').src = '';
+}
+
+// ── Voice Player Controls ───────────────────────────────────────
+
+function toggleVoicePlay(uid, src) {
+    const audio = document.getElementById(`${uid}-audio`);
+    const btn = document.querySelector(`#${uid} .voice-play-btn`);
+    if (!audio) return;
+
+    if (audio.paused) {
+        // Pause all other players
+        document.querySelectorAll('.voice-bubble audio').forEach(a => {
+            if (a.id !== `${uid}-audio` && !a.paused) { a.pause(); a.currentTime = 0; }
+        });
+        document.querySelectorAll('.voice-play-btn').forEach(b => {
+            b.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i>';
+        });
+
+        audio.play();
+        btn.innerHTML = '<i data-lucide="pause" class="w-4 h-4"></i>';
+    } else {
+        audio.pause();
+        btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i>';
+    }
+    if (window.lucide) lucide.createIcons({ nodes: [btn] });
+}
+
+function seekVoice(event, uid) {
+    const track = document.getElementById(`${uid}-track`);
+    const audio = document.getElementById(`${uid}-audio`);
+    if (!track || !audio) return;
+    
+    // Calculate click position relative to track width
+    const rect = track.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    let pct = clickX / rect.width;
+    pct = Math.max(0, Math.min(1, pct)); // clamp between 0 and 1
+    
+    // Get total duration
+    let totalDur = audio.duration;
+    if (!totalDur || totalDur === Infinity) {
+        totalDur = parseFloat(audio.dataset.duration || 0);
+    }
+    
+    if (totalDur > 0) {
+        audio.currentTime = totalDur * pct;
+        updateVoiceProgress(uid); // update UI instantly
+    }
+}
+
+function updateVoiceProgress(uid) {
+    const audio = document.getElementById(`${uid}-audio`);
+    const track = document.getElementById(`${uid}-track`);
+    const durEl = document.getElementById(`${uid}-dur`);
+    if (!audio || !track) return;
+    
+    // Fix Infinity:NaN issue by falling back to metadata duration
+    let totalDur = audio.duration;
+    if (!totalDur || totalDur === Infinity) {
+        totalDur = parseFloat(audio.dataset.duration || 0);
+    }
+    
+    const pct = totalDur > 0 ? (audio.currentTime / totalDur) : 0;
+    
+    // Color the waveform bars based on percentage
+    const bars = track.querySelectorAll('.wave-bar');
+    const activeCount = Math.floor(pct * bars.length);
+    bars.forEach((bar, index) => {
+        if (index < activeCount) {
+            bar.classList.add('active');
+        } else {
+            bar.classList.remove('active');
+        }
+    });
+
+    if (durEl) {
+        const rem = Math.ceil(totalDur - audio.currentTime) || 0;
+        durEl.textContent = formatDuration(Math.max(0, rem));
+    }
+}
+
+function resetVoicePlayer(uid) {
+    const btn = document.querySelector(`#${uid} .voice-play-btn`);
+    const track = document.getElementById(`${uid}-track`);
+    const audio = document.getElementById(`${uid}-audio`);
+    const durEl = document.getElementById(`${uid}-dur`);
+    
+    if (track) {
+        track.querySelectorAll('.wave-bar').forEach(bar => bar.classList.remove('active'));
+    }
+    
+    if (btn) {
+        btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i>';
+        if (window.lucide) lucide.createIcons({ nodes: [btn] });
+    }
+    
+    if (durEl && audio) {
+        let totalDur = audio.duration;
+        if (!totalDur || totalDur === Infinity) totalDur = parseFloat(audio.dataset.duration || 0);
+        durEl.textContent = formatDuration(Math.ceil(totalDur));
+    }
+}
+
+// ── Image Picker ────────────────────────────────────────────────
+
+function triggerImagePicker() {
+    document.getElementById('image-file-input').click();
+}
+
+async function handleImageSelected(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    input.value = '';
+
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+        showToast(validation.error, 'error');
+        return;
+    }
+
+    // Show preview modal
+    const previewUrl = createImagePreviewURL(file);
+    const modal = document.getElementById('image-preview-modal');
+    document.getElementById('preview-img').src = previewUrl;
+    document.getElementById('preview-file-info').textContent =
+        `${file.name} — ${formatFileSize(file.size)}`;
+    modal.classList.remove('hidden');
+
+    // Store pending file for send
+    AppState._pendingImage = file;
+    AppState._pendingPreviewUrl = previewUrl;
+}
+
+async function sendPendingImage() {
+    const file = AppState._pendingImage;
+    if (!file) return;
+
+    closeImagePreviewModal();
+    showToast('Compressing & encrypting image...', 'info');
+
+    try {
+        const compressed = await compressImage(
+            file,
+            MediaConfig.image.maxWidth,
+            MediaConfig.image.maxHeight,
+            MediaConfig.image.quality
+        );
+        await sendMediaMessage(compressed, 'image', {
+            mimeType: 'image/jpeg',
+            fileName: file.name,
+        });
+    } catch (err) {
+        console.error('Image send error:', err);
+        showToast('Failed to send image', 'error');
+    }
+}
+
+function closeImagePreviewModal() {
+    document.getElementById('image-preview-modal').classList.add('hidden');
+    if (AppState._pendingPreviewUrl) {
+        revokeImagePreviewURL(AppState._pendingPreviewUrl);
+    }
+    AppState._pendingImage = null;
+    AppState._pendingPreviewUrl = null;
+}
+
+// ── Voice Recording UI ──────────────────────────────────────────
+
+let _voiceRecorder = null;
+
+async function toggleVoiceRecording() {
+    if (_voiceRecorder && _voiceRecorder.isRecording) {
+        // Already recording → stop and send
+        await stopVoiceRecording();
+    } else {
+        // Not recording → start
+        await startVoiceRecording();
+    }
+}
+
+async function startVoiceRecording() {
+    if (_voiceRecorder?.isRecording) return;
+
+    _voiceRecorder = new VoiceRecorder();
+    _voiceRecorder.onDurationUpdate = (sec) => {
+        document.getElementById('recording-duration').textContent = formatDuration(sec);
+        const remaining = MediaConfig.voice.maxDurationSec - sec;
+        if (remaining <= 10) {
+            document.getElementById('recording-duration').classList.add('text-red-400');
+        }
+    };
+    _voiceRecorder.onMaxDuration = async (blob, waveform) => {
+        hideRecordingOverlay();
+        if (blob) {
+            const v = validateVoiceBlob(blob);
+            if (!v.valid) { showToast(v.error, 'error'); return; }
+            await sendMediaMessage(blob, 'voice', { 
+                mimeType: 'audio/webm', 
+                duration: MediaConfig.voice.maxDurationSec,
+                waveform: waveform
+            });
+        }
+        _voiceRecorder = null;
+    };
+    
+    _voiceRecorder.onAmplitude = (vol) => {
+        // Animate the recording pulse/bars based on mic volume
+        const bars = document.querySelectorAll('#recording-waveform .rec-bar');
+        if (bars.length === 0) return;
+        
+        // Simple shifting animation
+        for (let i = 0; i < bars.length - 1; i++) {
+            bars[i].style.height = bars[i+1].style.height;
+        }
+        // Set new amplitude for the last bar
+        const height = Math.max(10, Math.min(100, vol * 100 * 2.5)); // Boost visual
+        bars[bars.length - 1].style.height = `${height}%`;
+    };
+
+    try {
+        await _voiceRecorder.start();
+        showRecordingOverlay();
+    } catch (err) {
+        console.error('Voice recording error:', err);
+        // Provide user-friendly messages
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            showToast('Microphone permission denied. Please allow microphone access in your browser settings and try again.', 'error');
+        } else if (err.name === 'NotFoundError') {
+            showToast('No microphone found. Please connect a microphone.', 'error');
+        } else {
+            showToast(err.message || 'Failed to start recording', 'error');
+        }
+        _voiceRecorder = null;
+    }
+}
+
+async function stopVoiceRecording() {
+    if (!_voiceRecorder || !_voiceRecorder.isRecording) return;
+    const duration = _voiceRecorder.getDuration();
+    const result = await _voiceRecorder.stop();
+    hideRecordingOverlay();
+
+    if (result && result.blob && duration >= 1) {
+        const v = validateVoiceBlob(result.blob);
+        if (!v.valid) { showToast(v.error, 'error'); return; }
+        await sendMediaMessage(result.blob, 'voice', { 
+            mimeType: 'audio/webm', 
+            duration: duration,
+            waveform: result.waveform
+        });
+    } else if (duration < 1) {
+        showToast('Recording too short. Click mic to start, click again to stop.', 'info');
+    }
+    _voiceRecorder = null;
+}
+
+function cancelVoiceRecording() {
+    if (_voiceRecorder) {
+        _voiceRecorder.cancel();
+        _voiceRecorder = null;
+    }
+    hideRecordingOverlay();
+}
+
+function showRecordingOverlay() {
+    document.getElementById('recording-overlay').classList.remove('hidden');
+    document.getElementById('media-actions').classList.add('hidden');
+    document.getElementById('message-input').classList.add('hidden');
+    document.getElementById('send-btn').classList.add('hidden');
+    document.getElementById('recording-duration').textContent = '0:00';
+    document.getElementById('recording-duration').classList.remove('text-red-400');
+    
+    // Reset recording waveform
+    const container = document.getElementById('recording-waveform');
+    if (container) {
+        container.innerHTML = Array(15).fill('<div class="rec-bar" style="height: 10%"></div>').join('');
+    }
+}
+
+function hideRecordingOverlay() {
+    document.getElementById('recording-overlay').classList.add('hidden');
+    document.getElementById('media-actions').classList.remove('hidden');
+    document.getElementById('message-input').classList.remove('hidden');
+    document.getElementById('send-btn').classList.remove('hidden');
+}
 

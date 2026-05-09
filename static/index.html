@@ -372,7 +372,38 @@
 
                 <!-- Message Input -->
                 <div class="p-3 sm:p-4 border-t border-white/5 bg-dark-800/30 backdrop-blur">
+                    <!-- Recording Overlay -->
+                    <div id="recording-overlay" class="hidden recording-overlay">
+                        <div class="recording-pulse"></div>
+                        <span class="text-sm font-medium text-red-400">Recording</span>
+                        
+                        <!-- Real-time waveform -->
+                        <div id="recording-waveform" class="flex items-center gap-[2px] h-6 mx-2 flex-1 justify-center overflow-hidden">
+                        </div>
+
+                        <span id="recording-duration" class="text-sm font-mono text-gray-300">0:00</span>
+                        <span class="text-xs text-gray-500 ml-1 hidden sm:inline">(max 5:00)</span>
+                        <div class="flex gap-2 ml-auto">
+                            <button onclick="cancelVoiceRecording()" class="p-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition" title="Cancel">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                            <button onclick="toggleVoiceRecording()" class="btn-primary p-2 rounded-lg" title="Send">
+                                <i data-lucide="send" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+
                     <form id="message-form" class="flex items-end gap-2" onsubmit="handleSendMessage(event)">
+                        <!-- Media Buttons -->
+                        <div id="media-actions" class="flex items-center gap-1 pb-0.5">
+                            <button type="button" onclick="triggerImagePicker()" class="media-btn" title="Send photo (max 5MB)">
+                                <i data-lucide="image" class="w-5 h-5"></i>
+                            </button>
+                            <button type="button" id="voice-record-btn" onclick="toggleVoiceRecording()" class="media-btn" title="Click to record voice (max 5 min)">
+                                <i data-lucide="mic" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
                         <div class="flex-1 relative">
                             <textarea id="message-input" rows="1"
                                 class="input-field w-full px-4 py-3 rounded-xl text-sm resize-none max-h-32"
@@ -385,6 +416,9 @@
                             <i data-lucide="send" class="w-4 h-4"></i>
                         </button>
                     </form>
+
+                    <!-- Hidden file input -->
+                    <input type="file" id="image-file-input" accept="image/*" class="hidden" onchange="handleImageSelected(this)">
                 </div>
             </div>
         </main>
@@ -501,11 +535,47 @@
     <!-- ═══════════════════════════════════════════════════════ -->
     <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
-    <script src="/static/crypto.js"></script>
-    <script src="/static/state.js"></script>
-    <script src="/static/websocket.js"></script>
-    <script src="/static/ui.js"></script>
-    <script src="/static/app.js"></script>
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- IMAGE PREVIEW MODAL                                     -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="image-preview-modal" class="modal-overlay hidden">
+        <div class="glass-card rounded-2xl p-4 w-full max-w-lg mx-4">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="image" class="w-5 h-5 text-accent"></i>
+                    <h3 class="text-sm font-semibold">Send Photo</h3>
+                </div>
+                <button onclick="closeImagePreviewModal()" class="p-2 rounded-lg hover:bg-white/5 transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div class="rounded-xl overflow-hidden bg-black/30 mb-3 max-h-[60vh] flex items-center justify-center">
+                <img id="preview-img" class="max-w-full max-h-[60vh] object-contain" alt="Preview">
+            </div>
+            <p id="preview-file-info" class="text-xs text-gray-500 mb-3"></p>
+            <div class="flex gap-2">
+                <button onclick="closeImagePreviewModal()" class="flex-1 py-2.5 rounded-xl text-sm font-medium border border-white/10 hover:bg-white/5 transition">Cancel</button>
+                <button onclick="sendPendingImage()" class="flex-1 btn-primary py-2.5 rounded-xl text-sm font-semibold">Send Photo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- IMAGE LIGHTBOX                                          -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="image-lightbox" class="hidden lightbox-overlay" onclick="closeLightbox()">
+        <button class="absolute top-4 right-4 p-2 rounded-full bg-black/50 hover:bg-black/70 transition z-10" onclick="event.stopPropagation(); closeLightbox()">
+            <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <img id="lightbox-img" class="max-w-[90vw] max-h-[90vh] object-contain rounded-lg" alt="Full size" onclick="event.stopPropagation()">
+    </div>
+
+    <script src="/static/crypto.js?v=2"></script>
+    <script src="/static/media.js?v=2"></script>
+    <script src="/static/state.js?v=2"></script>
+    <script src="/static/websocket.js?v=2"></script>
+    <script src="/static/ui.js?v=2"></script>
+    <script src="/static/app.js?v=2"></script>
 </body>
 
 </html>

@@ -132,6 +132,13 @@ async def handle_event(username: str, msg_type: str, data: dict) -> None:
         case "room_message":
             await handle_room_message(username, data)
 
+        # ── Media Messaging (Blind Relay) ───────────────────────
+        case "media_message":
+            await handle_private_media_message(username, data)
+
+        case "room_media_message":
+            await handle_room_media_message(username, data)
+
         # ── Room Management ─────────────────────────────────────
         case "delete_room":
             await handle_delete_room(username, data)
@@ -539,6 +546,91 @@ async def handle_remove_member(username: str, data: dict) -> None:
         })
 
     logger.info(f"👤 {target} removed from '{room_name}' by {username}")
+
+
+# ═══════════════════════════════════════════════════════════════
+# MEDIA MESSAGE HANDLERS (Blind Relay)
+# Server NEVER inspects the encrypted media payload.
+# ═══════════════════════════════════════════════════════════════
+
+
+async def handle_private_media_message(username: str, data: dict) -> None:
+    """Relay an encrypted media message (image/voice). BLIND RELAY."""
+    target = data.get("to")
+    encrypted_data = data.get("data")  # IV + Base64(ciphertext) — opaque
+    media_type = data.get("mediaType")  # "image" or "voice"
+    metadata = data.get("metadata", {})  # {mimeType, duration?, fileName?}
+
+    if not target or not encrypted_data or not media_type:
+        await state.send_to_user(username, {
+            "type": "error",
+            "message": "'to', 'data', and 'mediaType' are required",
+        })
+        return
+
+    sent = await state.send_to_user(target, {
+        "type": "media_message",
+        "from": username,
+        "data": encrypted_data,
+        "mediaType": media_type,
+        "metadata": metadata,
+        "timestamp": _timestamp(),
+    })
+
+    # Confirm delivery to sender
+    await state.send_to_user(username, {
+        "type": "media_message_sent",
+        "to": target,
+        "data": encrypted_data,
+        "mediaType": media_type,
+        "metadata": metadata,
+        "delivered": sent,
+        "timestamp": _timestamp(),
+    })
+
+
+async def handle_room_media_message(username: str, data: dict) -> None:
+    """Relay an encrypted media message to all room members. BLIND RELAY."""
+    room_name = data.get("room")
+    encrypted_data = data.get("data")  # IV + Base64(ciphertext) — opaque
+    media_type = data.get("mediaType")  # "image" or "voice"
+    metadata = data.get("metadata", {})
+
+    if not room_name or not encrypted_data or not media_type:
+        await state.send_to_user(username, {
+            "type": "error",
+            "message": "'room', 'data', and 'mediaType' are required",
+        })
+        return
+
+    # Verify sender is in the room
+    members = state.get_room_members(room_name)
+    if username not in members:
+        await state.send_to_user(username, {
+            "type": "error", "message": "You are not a member of this room",
+        })
+        return
+
+    # Blind relay to all room members except sender
+    await state.send_to_room(room_name, {
+        "type": "room_media_message",
+        "room": room_name,
+        "from": username,
+        "data": encrypted_data,
+        "mediaType": media_type,
+        "metadata": metadata,
+        "timestamp": _timestamp(),
+    }, exclude=username)
+
+    # Confirm to sender
+    await state.send_to_user(username, {
+        "type": "room_media_message_sent",
+        "room": room_name,
+        "data": encrypted_data,
+        "mediaType": media_type,
+        "metadata": metadata,
+        "timestamp": _timestamp(),
+    })
 
 
 def _timestamp() -> str:
