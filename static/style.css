@@ -19,10 +19,11 @@ body {
 
 /* ── Glassmorphism Card ────────────────────────────────────────── */
 .glass-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: rgba(30, 30, 74, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 .glass-card:hover {
@@ -50,7 +51,7 @@ body {
 
 /* ── Primary Button ────────────────────────────────────────────── */
 .btn-primary {
-    background: linear-gradient(135deg, #6c63ff 0%, #5549e6 100%);
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
     color: white;
     border: none;
     cursor: pointer;
@@ -61,11 +62,13 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
 }
 
-.btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 30px rgba(108, 99, 255, 0.3);
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+    filter: brightness(1.1);
 }
 
 .btn-primary:active {
@@ -340,22 +343,25 @@ body {
 .message-bubble {
     max-width: 70%;
     padding: 0.75rem 1rem;
-    border-radius: 1rem;
-    animation: message-in 0.3s ease-out;
+    border-radius: 1.25rem;
+    animation: message-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     word-wrap: break-word;
     overflow-wrap: break-word;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .message-bubble.sent {
-    background: linear-gradient(135deg, #6c63ff 0%, #5549e6 100%);
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
     color: white;
     margin-left: auto;
     border-bottom-right-radius: 0.25rem;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25);
 }
 
 .message-bubble.received {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(30, 30, 74, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-bottom-left-radius: 0.25rem;
 }
 
@@ -801,4 +807,41 @@ body {
         opacity: 1;
         transform: scale(1);
     }
+}
+
+/* ── Landing Page Animations ──────────────────────────────────────── */
+@keyframes blob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.05); }
+    66% { transform: translate(-20px, 20px) scale(0.95); }
+    100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.animate-blob {
+    animation: blob 10s infinite alternate ease-in-out;
+}
+
+.animation-delay-2000 {
+    animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+    animation-delay: 4s;
+}
+
+@keyframes gradient-x {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+.animate-gradient-x {
+    animation: gradient-x 4s ease infinite;
+}
+
+@keyframes shimmer {
+    100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+    animation: shimmer 2s infinite;
 }

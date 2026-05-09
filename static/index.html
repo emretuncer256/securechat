@@ -25,10 +25,10 @@
                             500: '#2a2a5a',
                         },
                         accent: {
-                            DEFAULT: '#6c63ff',
-                            light: '#8b83ff',
-                            dark: '#5549e6',
-                            glow: 'rgba(108, 99, 255, 0.3)',
+                            DEFAULT: '#8b5cf6', // Violet 500
+                            light: '#a78bfa',   // Violet 400
+                            dark: '#7c3aed',    // Violet 600
+                            glow: 'rgba(139, 92, 246, 0.4)',
                         },
                         glass: 'rgba(255, 255, 255, 0.05)',
                     },
@@ -61,9 +61,79 @@
 <body class="bg-dark-900 text-gray-200 font-sans antialiased min-h-screen overflow-hidden">
 
     <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- LANDING SCREEN                                          -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="landing-screen" class="relative min-h-screen flex items-center justify-center overflow-x-hidden">
+        <!-- Animated Background Orbs -->
+        <div class="absolute top-1/4 left-1/4 w-[30rem] h-[30rem] bg-accent/20 rounded-full mix-blend-screen filter blur-[128px] animate-blob"></div>
+        <div class="absolute top-1/3 right-1/4 w-[30rem] h-[30rem] bg-fuchsia-500/20 rounded-full mix-blend-screen filter blur-[128px] animate-blob animation-delay-2000"></div>
+        <div class="absolute -bottom-32 left-1/2 -translate-x-1/2 w-[40rem] h-[30rem] bg-emerald-500/10 rounded-full mix-blend-screen filter blur-[128px] animate-blob animation-delay-4000"></div>
+
+        <div class="relative z-10 w-full max-w-6xl mx-auto px-4 py-20 flex flex-col items-center text-center">
+            
+            <div data-aos="fade-down" data-aos-duration="1000" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md shadow-[0_0_15px_rgba(255,255,255,0.05)]">
+                <span class="flex h-2 w-2 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span class="text-xs font-semibold text-gray-300 tracking-wide uppercase">Secure. Private. Ephemeral.</span>
+            </div>
+
+            <h1 data-aos="zoom-in" data-aos-duration="1000" class="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6 leading-[1.1]">
+                Privacy First. <br/>
+                <span class="bg-gradient-to-r from-accent via-fuchsia-500 to-accent bg-clip-text text-transparent animate-gradient-x bg-[length:200%_auto]">Always.</span>
+            </h1>
+            
+            <p data-aos="fade-up" data-aos-duration="1000" data-aos-delay="200" class="text-lg md:text-xl text-gray-400 max-w-2xl mb-12 leading-relaxed">
+                Military-grade end-to-end encrypted messaging. 
+                No databases, no persistent storage, zero knowledge. Your conversations remain truly yours.
+            </p>
+
+            <div data-aos="fade-up" data-aos-duration="1000" data-aos-delay="400" class="flex flex-col sm:flex-row gap-4 w-full justify-center max-w-md">
+                <button onclick="showAuthScreen()" class="group relative flex-1 btn-primary py-4 rounded-2xl text-base font-semibold overflow-hidden shadow-[0_0_30px_rgba(139,92,246,0.3)] hover:shadow-[0_0_40px_rgba(139,92,246,0.5)] transition-shadow">
+                    <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer"></div>
+                    <span class="relative flex items-center justify-center gap-2">
+                        Get Started <i data-lucide="arrow-right" class="w-5 h-5 transition-transform group-hover:translate-x-1"></i>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Feature Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-24 w-full" data-aos="fade-up" data-aos-duration="1000" data-aos-delay="600">
+                <div class="glass-card p-8 rounded-3xl text-left border border-white/5 hover:border-accent/30 hover:bg-white/[0.04] transition-all duration-500 group relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 w-32 h-32 bg-accent/20 rounded-full blur-[40px] group-hover:bg-accent/30 transition-colors"></div>
+                    <div class="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-accent/20">
+                        <i data-lucide="shield" class="w-6 h-6 text-accent"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3 text-gray-100">RSA-2048 & AES-256</h3>
+                    <p class="text-sm text-gray-400 leading-relaxed">Unbreakable cryptography ensuring your messages can only be read by the intended recipient.</p>
+                </div>
+                
+                <div class="glass-card p-8 rounded-3xl text-left border border-white/5 hover:border-fuchsia-500/30 hover:bg-white/[0.04] transition-all duration-500 group relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 w-32 h-32 bg-fuchsia-500/20 rounded-full blur-[40px] group-hover:bg-fuchsia-500/30 transition-colors"></div>
+                    <div class="w-12 h-12 rounded-xl bg-fuchsia-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-fuchsia-500/20">
+                        <i data-lucide="eye-off" class="w-6 h-6 text-fuchsia-400"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3 text-gray-100">Blind Relay</h3>
+                    <p class="text-sm text-gray-400 leading-relaxed">Our servers strictly relay encrypted blobs. We cannot see, store, or intercept your communication.</p>
+                </div>
+                
+                <div class="glass-card p-8 rounded-3xl text-left border border-white/5 hover:border-emerald-500/30 hover:bg-white/[0.04] transition-all duration-500 group relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/20 rounded-full blur-[40px] group-hover:bg-emerald-500/30 transition-colors"></div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-emerald-500/20">
+                        <i data-lucide="zap" class="w-6 h-6 text-emerald-400"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3 text-gray-100">Ephemeral Media</h3>
+                    <p class="text-sm text-gray-400 leading-relaxed">Share voice recordings and photos securely. Media is encrypted entirely within your browser.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
     <!-- AUTH SCREEN                                             -->
     <!-- ═══════════════════════════════════════════════════════ -->
-    <div id="auth-screen" class="flex items-center justify-center min-h-screen">
+    <div id="auth-screen" class="hidden items-center justify-center min-h-screen">
         <div class="auth-container w-full max-w-md mx-4" data-aos="fade-up" data-aos-duration="800">
             <!-- Logo / Header -->
             <div class="text-center mb-8">
@@ -570,12 +640,12 @@
         <img id="lightbox-img" class="max-w-[90vw] max-h-[90vh] object-contain rounded-lg" alt="Full size" onclick="event.stopPropagation()">
     </div>
 
-    <script src="/static/crypto.js?v=2"></script>
-    <script src="/static/media.js?v=2"></script>
-    <script src="/static/state.js?v=2"></script>
-    <script src="/static/websocket.js?v=2"></script>
-    <script src="/static/ui.js?v=2"></script>
-    <script src="/static/app.js?v=2"></script>
+    <script src="/static/crypto.js?v=3"></script>
+    <script src="/static/media.js?v=3"></script>
+    <script src="/static/state.js?v=3"></script>
+    <script src="/static/websocket.js?v=3"></script>
+    <script src="/static/ui.js?v=3"></script>
+    <script src="/static/app.js?v=3"></script>
 </body>
 
 </html>

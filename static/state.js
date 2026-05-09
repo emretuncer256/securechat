@@ -119,7 +119,13 @@ function handleLogout() {
 // ── Screen Transitions ──────────────────────────────────────────
 
 async function showChatScreen() {
+    const landing = document.getElementById('landing-screen');
+    if (landing) {
+        landing.classList.add('hidden');
+        landing.classList.remove('flex');
+    }
     document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('auth-screen').classList.remove('flex');
     document.getElementById('chat-screen').classList.remove('hidden');
     document.getElementById('current-username').textContent = AppState.username;
     document.getElementById('user-avatar').textContent = AppState.username[0].toUpperCase();
@@ -131,6 +137,17 @@ async function showChatScreen() {
     console.log('🔑 RSA key pair generated');
     connectWebSocket();
     fetchAllUsers();
+}
+
+function showAuthScreen() {
+    const landing = document.getElementById('landing-screen');
+    if (landing) {
+        landing.classList.add('hidden');
+        landing.classList.remove('flex');
+    }
+    document.getElementById('chat-screen').classList.add('hidden');
+    document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('auth-screen').classList.add('flex');
 }
 
 async function fetchAllUsers() {
