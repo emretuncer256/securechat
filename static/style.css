@@ -111,6 +111,7 @@ body {
         width: 68px;
         flex-shrink: 0;
         position: relative;
+        z-index: 40;
     }
 
     /* Show compact, hide expanded by default */
