@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon">
+    <title>SecureChat — End-to-End Encrypted Messaging</title>
+    <meta name="description"
+        content="Real-time end-to-end encrypted chat application with RSA-2048 and AES-256-CBC encryption.">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            900: '#0a0a1a',
+                            800: '#0f0f2a',
+                            700: '#16163a',
+                            600: '#1e1e4a',
+                            500: '#2a2a5a',
+                        },
+                        accent: {
+                            DEFAULT: '#6c63ff',
+                            light: '#8b83ff',
+                            dark: '#5549e6',
+                            glow: 'rgba(108, 99, 255, 0.3)',
+                        },
+                        glass: 'rgba(255, 255, 255, 0.05)',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                },
+            },
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <!-- AOS - Animate on Scroll -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body class="bg-dark-900 text-gray-200 font-sans antialiased min-h-screen overflow-hidden">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- AUTH SCREEN                                             -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="auth-screen" class="flex items-center justify-center min-h-screen">
+        <div class="auth-container w-full max-w-md mx-4" data-aos="fade-up" data-aos-duration="800">
+            <!-- Logo / Header -->
+            <div class="text-center mb-8">
+                <div
+                    class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 mb-4">
+                    <i data-lucide="shield-check" class="w-8 h-8 text-accent"></i>
+                </div>
+                <h1
+                    class="text-3xl font-bold bg-gradient-to-r from-accent-light to-purple-400 bg-clip-text text-transparent">
+                    SecureChat
+                </h1>
+                <p class="text-gray-400 mt-2 text-sm">End-to-end encrypted messaging</p>
+            </div>
+
+            <!-- Tab Switcher -->
+            <div class="glass-card rounded-2xl p-1 mb-6 flex">
+                <button id="login-tab"
+                    class="auth-tab active flex-1 py-2.5 rounded-xl text-sm font-medium transition-all duration-300"
+                    onclick="switchAuthTab('login')">
+                    Sign In
+                </button>
+                <button id="register-tab"
+                    class="auth-tab flex-1 py-2.5 rounded-xl text-sm font-medium transition-all duration-300"
+                    onclick="switchAuthTab('register')">
+                    Sign Up
+                </button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="glass-card rounded-2xl p-6 space-y-4" onsubmit="handleLogin(event)">
+                <div class="space-y-1.5">
+                    <label class="text-xs font-medium text-gray-400 uppercase tracking-wider">Username</label>
+                    <div class="relative">
+                        <i data-lucide="user"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+                        <input type="text" id="login-username" required minlength="3" maxlength="20"
+                            class="input-field w-full pl-10 pr-4 py-3 rounded-xl text-sm"
+                            placeholder="Enter your username">
+                    </div>
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-xs font-medium text-gray-400 uppercase tracking-wider">Password</label>
+                    <div class="relative">
+                        <i data-lucide="lock"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+                        <input type="password" id="login-password" required minlength="6"
+                            class="input-field w-full pl-10 pr-4 py-3 rounded-xl text-sm"
+                            placeholder="Enter your password">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary w-full py-3 rounded-xl text-sm font-semibold">
+                    <span id="login-btn-text">Sign In</span>
+                    <div id="login-spinner" class="spinner hidden"></div>
+                </button>
+                <div id="login-error" class="error-message hidden text-center text-sm text-red-400"></div>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="glass-card rounded-2xl p-6 space-y-4 hidden"
+                onsubmit="handleRegister(event)">
+                <div class="space-y-1.5">
+                    <label class="text-xs font-medium text-gray-400 uppercase tracking-wider">Username</label>
+                    <div class="relative">
+                        <i data-lucide="user-plus"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+                        <input type="text" id="register-username" required minlength="3" maxlength="20"
+                            pattern="^[a-zA-Z0-9_]+$" class="input-field w-full pl-10 pr-4 py-3 rounded-xl text-sm"
+                            placeholder="Choose a username">
+                    </div>
+                    <p class="text-xs text-gray-500">Letters, numbers, and underscores only</p>
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-xs font-medium text-gray-400 uppercase tracking-wider">Password</label>
+                    <div class="relative">
+                        <i data-lucide="lock"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+                        <input type="password" id="register-password" required minlength="6"
+                            class="input-field w-full pl-10 pr-4 py-3 rounded-xl text-sm"
+                            placeholder="Create a password (min 6 chars)">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary w-full py-3 rounded-xl text-sm font-semibold">
+                    <span id="register-btn-text">Create Account</span>
+                    <div id="register-spinner" class="spinner hidden"></div>
+                </button>
+                <div id="register-error" class="error-message hidden text-center text-sm text-red-400"></div>
+                <div id="register-success" class="success-message hidden text-center text-sm text-emerald-400"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- CHAT SCREEN                                             -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="chat-screen" class="hidden h-screen flex">
+
+        <!-- ── Sidebar ───────────────────────────────────────── -->
+        <aside id="sidebar"
+            class="sidebar h-screen flex flex-col border-r border-white/5 bg-dark-800/80 backdrop-blur-xl">
+
+            <!-- ── Compact View (md–lg only, icon-only) ────────── -->
+            <div class="sidebar-compact hidden flex-col h-full py-2 items-center">
+                <!-- Logo -->
+                <div class="compact-item mb-1" style="cursor:default">
+                    <div class="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-accent"></i>
+                    </div>
+                </div>
+                <div class="compact-divider"></div>
+
+                <!-- Users (compact) -->
+                <div id="compact-users-list" class="flex-1 overflow-y-auto scrollbar-thin w-full flex flex-col items-center gap-0.5 py-1">
+                    <!-- Rendered by JS -->
+                </div>
+
+                <div class="compact-divider"></div>
+
+                <!-- Rooms (compact) -->
+                <div id="compact-rooms-list" class="overflow-y-auto scrollbar-thin w-full flex flex-col items-center gap-0.5 py-1" style="max-height:35%">
+                    <!-- Rendered by JS -->
+                </div>
+
+                <!-- Create Room (compact) -->
+                <div class="compact-item mb-1" onclick="openCreateRoomModal()">
+                    <div class="w-9 h-9 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                        <i data-lucide="plus" class="w-4 h-4 text-purple-400"></i>
+                    </div>
+                    <span class="compact-tooltip">Create Room</span>
+                </div>
+
+                <div class="compact-divider"></div>
+
+                <!-- User profile (compact) -->
+                <div class="compact-item mt-auto" style="cursor:default">
+                    <div class="compact-avatar bg-accent/20 text-accent">
+                        <span id="compact-user-avatar"></span>
+                    </div>
+                    <div class="compact-dot online"></div>
+                </div>
+                <div class="compact-item" onclick="handleLogout()">
+                    <i data-lucide="log-out" class="w-4 h-4 text-gray-400"></i>
+                    <span class="compact-tooltip">Logout</span>
+                </div>
+            </div>
+
+            <!-- ── Expanded View (full sidebar) ────────────────── -->
+            <div class="sidebar-expanded flex flex-col flex-1 min-h-0">
+                <!-- Sidebar Header -->
+                <div class="p-4 border-b border-white/5">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                                <i data-lucide="shield-check" class="w-4 h-4 text-accent"></i>
+                            </div>
+                            <span class="font-semibold text-sm">SecureChat</span>
+                        </div>
+                        <button id="sidebar-close-btn" class="md:hidden p-2 rounded-lg hover:bg-white/5 transition"
+                            onclick="toggleSidebar()">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <!-- Search -->
+                    <div class="relative">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+                        <input type="text" id="search-input" placeholder="Search users or rooms..."
+                            class="input-field w-full pl-10 pr-4 py-2.5 rounded-xl text-sm"
+                            oninput="handleSearch(this.value)">
+                    </div>
+                </div>
+
+                <!-- Users Section -->
+                <div class="flex-1 overflow-y-auto scrollbar-thin">
+                    <div class="p-3">
+                        <div class="flex items-center justify-between px-2 mb-2">
+                            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Direct
+                                Messages</span>
+                            <span id="online-count" class="text-xs text-accent font-mono">0 online</span>
+                        </div>
+                        <div id="users-list" class="space-y-0.5">
+                            <!-- User items rendered by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Rooms Section -->
+                    <div class="p-3 border-t border-white/5">
+                        <div class="flex items-center justify-between px-2 mb-2">
+                            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Rooms</span>
+                            <button id="create-room-btn" class="p-1 rounded-lg hover:bg-accent/10 text-accent transition"
+                                onclick="openCreateRoomModal()">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <div id="rooms-list" class="space-y-0.5">
+                            <!-- Room items rendered by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Profile Footer -->
+                <div class="p-3 border-t border-white/5">
+                    <div class="flex items-center justify-between glass-card rounded-xl px-3 py-2.5">
+                        <div class="flex items-center gap-2">
+                            <div class="relative">
+                                <div class="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
+                                    <span id="user-avatar" class="text-xs font-bold text-accent"></span>
+                                </div>
+                                <div
+                                    class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-dark-800 pulse-online">
+                                </div>
+                            </div>
+                            <div>
+                                <p id="current-username" class="text-sm font-medium"></p>
+                                <p class="text-xs text-emerald-400 flex items-center gap-1">
+                                    <i data-lucide="lock" class="w-3 h-3"></i> Encrypted
+                                </p>
+                            </div>
+                        </div>
+                        <button id="logout-btn"
+                            class="p-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition"
+                            onclick="handleLogout()">
+                            <i data-lucide="log-out" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ── Main Chat Area ────────────────────────────────── -->
+        <main class="flex-1 flex flex-col h-screen">
+            <!-- Mobile Header -->
+            <div class="md:hidden flex items-center gap-3 p-3 border-b border-white/5 bg-dark-800/50 backdrop-blur">
+                <button id="sidebar-toggle-btn" class="p-2 rounded-lg hover:bg-white/5 transition"
+                    onclick="toggleSidebar()">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+                <span class="font-semibold text-sm">SecureChat</span>
+            </div>
+
+            <!-- No Chat Selected (Welcome) -->
+            <div id="welcome-screen" class="flex-1 flex items-center justify-center">
+                <div class="text-center max-w-sm" data-aos="fade-up">
+                    <div
+                        class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-accent/5 border border-accent/10 mb-6">
+                        <i data-lucide="message-square-lock" class="w-10 h-10 text-accent/50"></i>
+                    </div>
+                    <h2 class="text-xl font-semibold text-gray-300 mb-2">Welcome to SecureChat</h2>
+                    <p class="text-sm text-gray-500 leading-relaxed">
+                        Select a user or room from the sidebar to start an encrypted conversation.
+                        All messages are end-to-end encrypted using AES-256.
+                    </p>
+                    <div class="flex items-center justify-center gap-4 mt-6">
+                        <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                            <i data-lucide="shield" class="w-3.5 h-3.5 text-accent/50"></i>
+                            RSA-2048
+                        </div>
+                        <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                            <i data-lucide="lock" class="w-3.5 h-3.5 text-accent/50"></i>
+                            AES-256-CBC
+                        </div>
+                        <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                            <i data-lucide="eye-off" class="w-3.5 h-3.5 text-accent/50"></i>
+                            Zero Knowledge
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Chat View -->
+            <div id="chat-view" class="flex-1 flex flex-col hidden">
+                <!-- Chat Header -->
+                <div id="chat-header"
+                    class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-white/5 bg-dark-800/30 backdrop-blur">
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <div id="chat-avatar"
+                                class="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                                <span id="chat-avatar-text" class="text-sm font-bold text-accent"></span>
+                            </div>
+                            <div id="chat-status-dot"
+                                class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-dark-800 hidden">
+                            </div>
+                        </div>
+                        <div>
+                            <h3 id="chat-name" class="font-semibold text-sm"></h3>
+                            <p id="chat-status" class="text-xs text-gray-500"></p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button id="room-settings-btn"
+                            class="hidden p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition"
+                            onclick="openRoomSettingsModal()">
+                            <i data-lucide="settings" class="w-4 h-4"></i>
+                        </button>
+                        <div id="encryption-badge"
+                            class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                            <i data-lucide="lock" class="w-3 h-3 text-emerald-400"></i>
+                            <span class="text-xs text-emerald-400 font-medium">E2EE</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages Container -->
+                <div id="messages-container" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 scrollbar-thin">
+                    <!-- Messages rendered by JS -->
+                </div>
+
+                <!-- Message Input -->
+                <div class="p-3 sm:p-4 border-t border-white/5 bg-dark-800/30 backdrop-blur">
+                    <form id="message-form" class="flex items-end gap-2" onsubmit="handleSendMessage(event)">
+                        <div class="flex-1 relative">
+                            <textarea id="message-input" rows="1"
+                                class="input-field w-full px-4 py-3 rounded-xl text-sm resize-none max-h-32"
+                                placeholder="Type a message..." onkeydown="handleMessageKeydown(event)"
+                                oninput="autoResizeTextarea(this)"></textarea>
+                        </div>
+                        <button type="submit" id="send-btn"
+                            class="btn-primary p-3 rounded-xl flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+                            disabled>
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- CREATE ROOM MODAL                                       -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="room-modal" class="modal-overlay hidden">
+        <div class="glass-card rounded-2xl p-6 w-full max-w-md mx-4" data-aos="zoom-in" data-aos-duration="300">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Create Room</h3>
+                <button onclick="closeCreateRoomModal()" class="p-2 rounded-lg hover:bg-white/5 transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <form onsubmit="handleCreateRoom(event)">
+                <div class="space-y-4">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-gray-400 uppercase tracking-wider">Room Name</label>
+                        <div class="relative">
+                            <i data-lucide="hash"
+                                class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+                            <input type="text" id="room-name-input" required
+                                class="input-field w-full pl-10 pr-4 py-3 rounded-xl text-sm"
+                                placeholder="Enter room name">
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-gray-400 uppercase tracking-wider">Invite Members</label>
+                        <div id="invite-users-list" class="max-h-40 overflow-y-auto space-y-1 scrollbar-thin">
+                            <!-- Rendered by JS -->
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary w-full py-3 rounded-xl text-sm font-semibold mt-4">
+                    Create Room
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- ROOM SETTINGS MODAL                                     -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="room-settings-modal" class="modal-overlay hidden">
+        <div class="glass-card rounded-2xl p-6 w-full max-w-md mx-4">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                        <i data-lucide="settings" class="w-4 h-4 text-purple-400"></i>
+                    </div>
+                    <h3 id="room-settings-title" class="text-lg font-semibold">Room Settings</h3>
+                </div>
+                <button onclick="closeRoomSettingsModal()" class="p-2 rounded-lg hover:bg-white/5 transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Room Info -->
+            <div class="mb-4 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-gray-400">Created by</span>
+                    <span id="room-settings-creator" class="text-xs font-medium text-accent"></span>
+                </div>
+            </div>
+
+            <!-- Members Section -->
+            <div class="space-y-1.5 mb-4">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-medium text-gray-400 uppercase tracking-wider">Members</label>
+                    <span id="room-settings-member-count" class="text-xs text-gray-500"></span>
+                </div>
+                <div id="room-settings-members" class="max-h-48 overflow-y-auto space-y-1 scrollbar-thin">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+
+            <!-- Add Members Section -->
+            <div id="room-settings-add-section" class="space-y-1.5 mb-4">
+                <label class="text-xs font-medium text-gray-400 uppercase tracking-wider">Add Members</label>
+                <div id="room-settings-add-list" class="max-h-32 overflow-y-auto space-y-1 scrollbar-thin">
+                    <!-- Rendered by JS -->
+                </div>
+                <button id="room-settings-add-btn" onclick="handleAddMembersFromSettings()"
+                    class="btn-primary w-full py-2.5 rounded-xl text-sm font-semibold mt-2 hidden">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    Add Selected Members
+                </button>
+            </div>
+
+            <!-- Leave / Delete -->
+            <div id="room-settings-actions" class="space-y-2 pt-3 border-t border-white/5">
+                <!-- Leave room (for non-creators) -->
+                <button id="room-leave-btn"
+                    class="hidden w-full py-2.5 rounded-xl text-sm font-semibold border border-amber-500/20 text-amber-400 hover:bg-amber-500/10 transition"
+                    onclick="handleLeaveRoom()">
+                    <i data-lucide="log-out" class="w-4 h-4 inline mr-1"></i>
+                    Leave Room
+                </button>
+                <!-- Delete room (for creator only) -->
+                <button id="room-delete-btn"
+                    class="hidden w-full py-2.5 rounded-xl text-sm font-semibold border border-red-500/20 text-red-400 hover:bg-red-500/10 transition"
+                    onclick="handleDeleteRoom()">
+                    <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>
+                    Delete Room
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TOAST NOTIFICATIONS                                     -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <script src="/static/crypto.js"></script>
+    <script src="/static/state.js"></script>
+    <script src="/static/websocket.js"></script>
+    <script src="/static/ui.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+
+</html>
