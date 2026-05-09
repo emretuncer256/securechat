@@ -1,8 +1,13 @@
 [project]
-name = "chatapp"
-version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
+name = "securechat"
+version = "1.0.0"
+description = "SecureChat is a modern, end-to-end encrypted chat application built with FastAPI, WebSockets, and AES-256-CBC encryption. It features a sleek, glassmorphism-based UI with real-time messaging, secure file transfers, and ephemeral message capabilities."
+authors = [
+    {
+        "name" = "Emre Tuncer"
+        "email" = "emretuncer.developer@gmail.com"
+    }
+]
 requires-python = ">=3.14"
 dependencies = [
     "aiosqlite>=0.22.1",
