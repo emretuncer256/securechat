@@ -115,7 +115,7 @@ ChatApp/
 
 ```bash
 # Clone the repository
-git clone https://github.com/<your-username>/ChatApp.git
+git clone https://github.com/emretuncer256/securechat.git
 cd ChatApp
 
 # Install dependencies (uv will create a virtual environment automatically)
