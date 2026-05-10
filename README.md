@@ -30,7 +30,7 @@ You can watch the demonstration of the SecureChat application below:
   Your browser does not support the video tag.
 </video>
 
-*(Alternatively, you can view the video file directly: [docs/demo/demo.mp4](docs/demo/demo.mp4))*
+*(Alternatively, you can view the video file directly: [docs/demo.mp4](docs/demo.mp4))*
 
 ### Application Screenshots
 
