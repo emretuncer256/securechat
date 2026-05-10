@@ -20,6 +20,35 @@
 - **Premium Modern UI** — A stunning landing page, glassmorphism-inspired design, dynamic CSS animations (AOS.js), and interactive UI elements
 - **User Presence Tracking** — Real-time online/offline status indicators
 
+## 📸 Screenshots & Demo
+
+### Video Demo
+You can watch the demonstration of the SecureChat application below:
+
+<video width="100%" controls>
+  <source src="docs/demo/demo.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+*(Alternatively, you can view the video file directly: [docs/demo/demo.mp4](docs/demo/demo.mp4))*
+
+### Application Screenshots
+
+**Landing Page**
+![Landing Page](docs/screenshots/landing_page.png)
+
+**Login & Register Page**
+![Login & Register](docs/screenshots/login_register_page.png)
+
+**Private Chat**
+![Private Chat](docs/screenshots/chat_page.png)
+
+**Group Chat**
+![Group Chat](docs/screenshots/group_chat_page.png)
+
+**Group Chat Settings**
+![Group Chat Settings](docs/screenshots/group_chat_settings.png)
+
 ## 🏗️ Architecture
 
 ```
