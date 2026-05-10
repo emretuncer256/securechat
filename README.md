@@ -26,7 +26,7 @@
 You can watch the demonstration of the SecureChat application below:
 
 <video width="100%" controls>
-  <source src="docs/demo/demo.mp4" type="video/mp4">
+  <source src="docs/demo.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
 
